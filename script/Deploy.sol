@@ -1,33 +1,33 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
-import {Greeter} from 'contracts/Greeter.sol';
-import {Script} from 'forge-std/Script.sol';
-import {IERC20} from 'forge-std/interfaces/IERC20.sol';
+import {IPool} from "aave/core-v3/interfaces/IPool.sol";
+import {Factory} from "contracts/Factory.sol";
+import {Script} from "forge-std/Script.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {IRewardsController} from "yield-daddy/aave-v3/external/IRewardsController.sol";
 
 contract Deploy is Script {
   struct DeploymentParams {
-    string greeting;
-    IERC20 token;
+    IPool lendingPool_;
+    IRewardsController rewardsController_;
   }
 
   /// @notice Deployment parameters for each chain
   mapping(uint256 _chainId => DeploymentParams _params) internal _deploymentParams;
 
   function setUp() public {
-    // Mainnet
-    _deploymentParams[1] = DeploymentParams('Hello, Mainnet!', IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));
-
-    // Sepolia
-    _deploymentParams[11_155_111] =
-      DeploymentParams('Hello, Sepolia!', IERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6));
+    // Optimism
+    _deploymentParams[10] = DeploymentParams(
+      IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD), IRewardsController(0x929EC64c34a17401F460460D4B9390518E5B473e)
+    );
   }
 
   function run() public {
     DeploymentParams memory _params = _deploymentParams[block.chainid];
 
     vm.startBroadcast();
-    new Greeter(_params.greeting, _params.token);
+    new Factory(_params.lendingPool_, _params.rewardsController_);
     vm.stopBroadcast();
   }
 }
