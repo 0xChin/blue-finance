@@ -5,7 +5,10 @@ import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
+import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import {PythStructs} from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 import {IPool} from "aave/core-v3/interfaces/IPool.sol";
+import {console} from "forge-std/console.sol";
 import {IRewardsController} from "yield-daddy/aave-v3/external/IRewardsController.sol";
 
 /// @title AaveV3ERC4626
@@ -64,6 +67,9 @@ contract AaveV3ERC4626 is ERC4626 {
   /// @notice The Aave RewardsController contract
   IRewardsController public immutable rewardsController;
 
+  IPyth public immutable pyth;
+  bytes32 public immutable pythPriceFeed;
+
   /// -----------------------------------------------------------------------
   /// Constructor
   /// -----------------------------------------------------------------------
@@ -73,12 +79,16 @@ contract AaveV3ERC4626 is ERC4626 {
     ERC20 aToken_,
     IPool lendingPool_,
     address rewardRecipient_,
-    IRewardsController rewardsController_
+    IRewardsController rewardsController_,
+    IPyth pyth_,
+    bytes32 pythPriceFeed_
   ) ERC4626(asset_, _vaultName(asset_), _vaultSymbol(asset_)) {
     aToken = aToken_;
     lendingPool = lendingPool_;
     rewardRecipient = rewardRecipient_;
     rewardsController = rewardsController_;
+    pyth = pyth_;
+    pythPriceFeed = pythPriceFeed_;
   }
 
   /// -----------------------------------------------------------------------
@@ -143,8 +153,16 @@ contract AaveV3ERC4626 is ERC4626 {
   }
 
   function totalAssets() public view virtual override returns (uint256) {
-    // aTokens use rebasing to accrue interest, so the total assets is just the aToken balance
-    return aToken.balanceOf(address(this));
+    (uint256 totalCollateralUSD, uint256 totalDebtUSD,,,,) = lendingPool.getUserAccountData(address(this));
+
+    uint256 amountInUSD = (totalCollateralUSD - totalDebtUSD) * 10 ** (asset.decimals());
+    PythStructs.Price memory price = pyth.getPriceUnsafe(pythPriceFeed);
+    uint256 assetPriceInUSD =
+      (uint256(uint64(price.price)) * (10 ** asset.decimals())) / (10 ** uint8(uint32(-1 * price.expo)));
+
+    amountInUSD = amountInUSD / assetPriceInUSD;
+
+    return amountInUSD * 10 ** 10;
   }
 
   function afterDeposit(uint256 assets, uint256 /*shares*/ ) internal virtual override {

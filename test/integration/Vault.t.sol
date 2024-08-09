@@ -31,8 +31,11 @@ contract IntegrationVault is IntegrationBase {
 
     _vault.rebalance();
 
-    console.log("redeem", _vault.previewRedeem(shares));
-    console.log("redeem", _vault.previewWithdraw(1e18));
+    console.log("expected", 1e18);
+    console.log("redeemff", _vault.previewRedeem(shares));
+    console.log("withdraw", _vault.previewWithdraw(1e18));
+    console.log("maxredem", _vault.maxRedeem(_wethWhale));
+    console.log("maxWITHD", _vault.maxWithdraw(_wethWhale));
     /* _vault.redeem(shares, _wethWhale, _wethWhale); */
     vm.stopPrank();
   }

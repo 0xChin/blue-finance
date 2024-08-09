@@ -5,6 +5,8 @@ import {AaveV3ERC4626, ERC20, IPool, IRewardsController} from "./external/AaveV3
 
 import {PercentageMath} from "aave/core-v3/protocol/libraries/math/PercentageMath.sol";
 import {WadRayMath} from "aave/core-v3/protocol/libraries/math/WadRayMath.sol";
+
+import {console} from "forge-std/console.sol";
 import {ISwapRouter} from "uniswap/v3-periphery/interfaces/ISwapRouter.sol";
 import {TransferHelper} from "uniswap/v3-periphery/libraries/TransferHelper.sol";
 
@@ -24,8 +26,6 @@ contract Vault is AaveV3ERC4626 {
   uint256 public MAX_HEALTH_FACTOR;
   uint24 public constant poolFee = 3000;
   ISwapRouter public immutable uniswapRouter;
-  IPyth public immutable pyth;
-  bytes32 public immutable pythPriceFeed;
 
   constructor(
     ERC20 asset_,
@@ -39,14 +39,12 @@ contract Vault is AaveV3ERC4626 {
     ISwapRouter uniswapRouter_,
     IPyth pyth_,
     bytes32 pythPriceFeed_
-  ) AaveV3ERC4626(asset_, aToken_, lendingPool_, rewardRecipient_, rewardsController_) {
+  ) AaveV3ERC4626(asset_, aToken_, lendingPool_, rewardRecipient_, rewardsController_, pyth_, pythPriceFeed_) {
     MIN_HEALTH_FACTOR = minHealthFactor_;
     MAX_HEALTH_FACTOR = maxHealthFactor_;
     TARGET_HEALTH_FACTOR = (minHealthFactor_ + maxHealthFactor_) / 2;
     borrowedAsset = borrowedAsset_;
     uniswapRouter = uniswapRouter_;
-    pyth = pyth_;
-    pythPriceFeed = pythPriceFeed_;
 
     TransferHelper.safeApprove(address(asset), address(uniswapRouter), type(uint256).max);
 
@@ -95,8 +93,6 @@ contract Vault is AaveV3ERC4626 {
     (uint256 totalCollateralUSD, uint256 totalDebtUSD,, uint256 liquidationThreshold,, uint256 currentHealthFactor) =
       lendingPool.getUserAccountData(address(this));
 
-    emitLogs();
-
     if (currentHealthFactor > MAX_HEALTH_FACTOR) {
       // based on the health factor formula: https://github.com/aave/aave-v3-core/blob/c8722965501b182f6ab380db23e52983eb87e406/contracts/protocol/libraries/logic/GenericLogic.sol#L183-L187
       uint256 debtToTake = (
@@ -104,8 +100,6 @@ contract Vault is AaveV3ERC4626 {
       ) * (10 ** (borrowedAsset.decimals() - 8));
 
       lendingPool.borrow(address(borrowedAsset), debtToTake, 2, 0, address(this));
-
-      emitLogs();
 
       ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
         tokenIn: address(borrowedAsset),
@@ -125,12 +119,8 @@ contract Vault is AaveV3ERC4626 {
 
       lendingPool.supply(address(asset), amountOut, address(this), 0);
 
-      emitLogs();
-
       rebalance();
     } else if (currentHealthFactor < MIN_HEALTH_FACTOR) {
-      emitLogs();
-
       // Step 1: Calculate the target debt level to achieve the target health factor
       uint256 targetDebtUSD = totalCollateralUSD.percentMul(liquidationThreshold).wadDiv(TARGET_HEALTH_FACTOR);
 
@@ -175,13 +165,15 @@ contract Vault is AaveV3ERC4626 {
 
       lendingPool.repay(address(borrowedAsset), amountOut, 2, address(this));
 
-      emitLogs();
-
       rebalance();
     }
   }
 
+  function repay() internal {}
+
   function withdraw(uint256 assets, address receiver, address owner_) public override returns (uint256 shares) {
+    repay();
+
     shares = super.withdraw(assets, receiver, owner_);
 
     // Rebalance after withdrawal
@@ -189,6 +181,8 @@ contract Vault is AaveV3ERC4626 {
   }
 
   function redeem(uint256 shares, address receiver, address owner_) public override returns (uint256 assets) {
+    repay();
+
     assets = super.redeem(shares, receiver, owner_);
 
     // Rebalance after redemption

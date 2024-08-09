@@ -18,7 +18,7 @@ contract IntegrationBase is Test {
   address internal _user = makeAddr("user");
   address internal _merchant = makeAddr("merchant");
   address internal _owner = makeAddr("owner");
-  address internal _wethWhale = 0x478946BcD4a5a22b316470F5486fAfb928C0bA25;
+  address internal _wethWhale = 0x86Bb63148d17d445Ed5398ef26Aa05Bf76dD5b59;
   address[] internal _tokens;
   IPool internal _pool = IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
   IRewardsController internal _rewardsController = IRewardsController(0x929EC64c34a17401F460460D4B9390518E5B473e);
