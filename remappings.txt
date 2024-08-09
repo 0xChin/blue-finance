@@ -1,5 +1,11 @@
 forge-std/=node_modules/forge-std/src
 halmos-cheatcodes=node_modules/halmos-cheatcodes
+openzeppelin-contracts/=node_modules/@openzeppelin/contracts
+aave/core-v3/=node_modules/@aave/core-v3/contracts
+uniswap/v3-periphery/=node_modules/@uniswap/v3-periphery/contracts
+yield-daddy/=node_modules/yield-daddy/src
+solmate/=node_modules/solmate/src
+pythnetwork/pyth-sdk-solidity/=node_modules/@pythnetwork/pyth-sdk-solidity
 
 contracts/=src/contracts
 interfaces/=src/interfaces

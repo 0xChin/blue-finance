@@ -1,23 +1,45 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
-import {Greeter, IGreeter} from 'contracts/Greeter.sol';
-import {Test} from 'forge-std/Test.sol';
-import {IERC20} from 'forge-std/interfaces/IERC20.sol';
+import {Factory} from "contracts/Factory.sol";
+import {Vault} from "contracts/Vault.sol";
+import {Test} from "forge-std/Test.sol";
+
+import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import {IPool} from "aave/core-v3/interfaces/IPool.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ISwapRouter} from "uniswap/v3-periphery/interfaces/ISwapRouter.sol";
+import {IRewardsController} from "yield-daddy/aave-v3/external/IRewardsController.sol";
 
 contract IntegrationBase is Test {
-  uint256 internal constant _FORK_BLOCK = 18_920_905;
+  uint256 internal constant _FORK_BLOCK = 123_812_092;
 
-  string internal _initialGreeting = 'hola';
-  address internal _user = makeAddr('user');
-  address internal _owner = makeAddr('owner');
-  address internal _daiWhale = 0x42f8CA49E88A8fd8F0bfA2C739e648468b8f9dec;
-  IERC20 internal _dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-  IGreeter internal _greeter;
+  address internal _user = makeAddr("user");
+  address internal _merchant = makeAddr("merchant");
+  address internal _owner = makeAddr("owner");
+  address internal _wethWhale = 0x478946BcD4a5a22b316470F5486fAfb928C0bA25;
+  address[] internal _tokens;
+  IPool internal _pool = IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
+  IRewardsController internal _rewardsController = IRewardsController(0x929EC64c34a17401F460460D4B9390518E5B473e);
+  ERC20 internal _weth = ERC20(0x4200000000000000000000000000000000000006);
+  ERC20 internal _dai = ERC20(0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1);
+  ISwapRouter internal _swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+  IPyth internal _pyth = IPyth(0xff1a0f4744e8582DF1aE09D5611b887B6a12925C);
+  uint256 internal _amount = 1e25;
+  Factory internal _factory;
+  Vault internal _vault;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('mainnet'), _FORK_BLOCK);
-    vm.prank(_owner);
-    _greeter = new Greeter(_initialGreeting, _dai);
+    vm.startPrank(_owner);
+    _factory = new Factory(_pool, _rewardsController, _swapRouter, _pyth);
+    vm.createSelectFork(vm.rpcUrl("optimism"), _FORK_BLOCK);
+    vm.label(address(_vault), "Vault");
+    vm.label(address(_factory), "Factory");
+    vm.label(address(_pool), "Pool");
+    vm.label(address(_swapRouter), "SwapRouter");
+    vm.label(address(_rewardsController), "RewardsController");
+    vm.label(address(_weth), "WETH");
+    vm.label(address(_dai), "DAI");
   }
 }
