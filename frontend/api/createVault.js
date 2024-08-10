@@ -21,7 +21,7 @@ const walletClient = createWalletClient({
 });
 
 
-const contract = getContract({
+const factoryContract = getContract({
   address: CONTRACT_ADDRESS,
   abi: ABI,
   client: walletClient,
@@ -29,6 +29,10 @@ const contract = getContract({
 
 export default async function handler(req, res) {
   const { method, params } = req.body;
+  
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
+  }
   
   try {
     let result;
