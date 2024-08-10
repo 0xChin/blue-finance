@@ -13,6 +13,7 @@
     "build": "forge build",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "coverage": "forge coverage --report summary --report lcov --match-path 'test/unit/*'",
+    "deploy:arbitrum": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $ARBITRUM_RPC --broadcast --chain arbitrum --private-key $ARBITRUM_DEPLOYER_PK --verify'",
     "deploy:mainnet": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK'",
     "deploy:optimism": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $OPTIMISM_RPC --broadcast --chain optimism --private-key $OPTIMISM_DEPLOYER_PK --verify'",
     "deploy:sepolia": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK'",

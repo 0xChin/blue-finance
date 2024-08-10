@@ -18,25 +18,22 @@ contract IntegrationVault is IntegrationBase {
           _dai,
           _healthFactorWithDecimals(125),
           _healthFactorWithDecimals(130),
-          bytes32(0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace)
+          bytes32(0x8ac0c70fff57e9aefdf5edf44b51d62c2d433653cbb2cf5cc06bb115af04d221)
         )
       )
     );
 
     vm.startPrank(_wethWhale);
     _weth.approve(address(_vault), type(uint256).max);
-    uint256 shares = _vault.deposit(1e18, _wethWhale);
+    _vault.deposit(_weth.balanceOf(_wethWhale) / 2, _wethWhale);
 
     _vault.updateHealthFactors(_healthFactorWithDecimals(135), _healthFactorWithDecimals(140));
 
     _vault.rebalance();
 
-    console.log("expected", 1e18);
-    console.log("redeemff", _vault.previewRedeem(shares));
-    console.log("withdraw", _vault.previewWithdraw(1e18));
-    console.log("maxredem", _vault.maxRedeem(_wethWhale));
-    console.log("maxWITHD", _vault.maxWithdraw(_wethWhale));
-    /* _vault.redeem(shares, _wethWhale, _wethWhale); */
+    _vault.approve(address(_pool), type(uint256).max);
+
+    _vault.redeem(_vault.maxRedeem(_wethWhale) - _vault.maxRedeem(_wethWhale) / 10, _wethWhale, _wethWhale);
     vm.stopPrank();
   }
 }

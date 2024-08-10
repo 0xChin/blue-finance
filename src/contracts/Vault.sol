@@ -3,9 +3,14 @@ pragma solidity 0.8.26;
 
 import {AaveV3ERC4626, ERC20, IPool, IRewardsController} from "./external/AaveV3ERC4626.sol";
 
+import {
+  IFlashLoanSimpleReceiver,
+  IPoolAddressesProvider
+} from "aave/core-v3/flashloan/interfaces/IFlashLoanSimpleReceiver.sol";
 import {PercentageMath} from "aave/core-v3/protocol/libraries/math/PercentageMath.sol";
 import {WadRayMath} from "aave/core-v3/protocol/libraries/math/WadRayMath.sol";
 
+import {DataTypes} from "aave/core-v3/protocol/libraries/types/DataTypes.sol";
 import {console} from "forge-std/console.sol";
 import {ISwapRouter} from "uniswap/v3-periphery/interfaces/ISwapRouter.sol";
 import {TransferHelper} from "uniswap/v3-periphery/libraries/TransferHelper.sol";
@@ -13,14 +18,12 @@ import {TransferHelper} from "uniswap/v3-periphery/libraries/TransferHelper.sol"
 import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {PythStructs} from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 
-contract Vault is AaveV3ERC4626 {
+contract Vault is AaveV3ERC4626, IFlashLoanSimpleReceiver {
   using WadRayMath for uint256;
   using PercentageMath for uint256;
 
-  event log(string, uint256);
-  event log(string, int64);
-
   ERC20 public immutable borrowedAsset;
+  ERC20 public immutable bToken;
   uint256 public MIN_HEALTH_FACTOR;
   uint256 public TARGET_HEALTH_FACTOR;
   uint256 public MAX_HEALTH_FACTOR;
@@ -46,9 +49,15 @@ contract Vault is AaveV3ERC4626 {
     borrowedAsset = borrowedAsset_;
     uniswapRouter = uniswapRouter_;
 
+    DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(address(borrowedAsset));
+
+    bToken = ERC20(reserveData.variableDebtTokenAddress);
+
     TransferHelper.safeApprove(address(asset), address(uniswapRouter), type(uint256).max);
 
     TransferHelper.safeApprove(address(borrowedAsset), address(uniswapRouter), type(uint256).max);
+
+    borrowedAsset.approve(address(lendingPool), type(uint256).max);
   }
 
   function updateHealthFactors(uint256 minHealthFactor_, uint256 maxHealthFactor_) public {
@@ -69,24 +78,6 @@ contract Vault is AaveV3ERC4626 {
 
     // Calculate and adjust the position to maintain desired health factor
     rebalance();
-  }
-
-  function emitLogs() public {
-    (
-      uint256 totalCollateralUSD,
-      uint256 totalDebtUSD,
-      uint256 availableBorrowsUSD,
-      uint256 liquidationThreshold,
-      ,
-      uint256 currentHealthFactor
-    ) = lendingPool.getUserAccountData(address(this));
-
-    emit log("totalCollateralUSD", totalCollateralUSD / 10e7);
-    emit log("totalDebtUSD", totalDebtUSD / 10e7);
-    emit log("liquidationThreshold", liquidationThreshold);
-    emit log("availableBorrowsUSD", availableBorrowsUSD / 10e7);
-    emit log("TARGET_HEALTH_FACTOR", TARGET_HEALTH_FACTOR);
-    emit log("currentHealthFactor", currentHealthFactor);
   }
 
   function rebalance() public {
@@ -136,13 +127,6 @@ contract Vault is AaveV3ERC4626 {
       // Step 3: Calculate the amount of aTokens to repay
       uint256 amountToRepay = debtToRepayUSD.wadDiv(assetPriceInUSD) / 10e7;
 
-      // Log the calculated values for debugging
-      emit log("targetDebtUSD", targetDebtUSD / 10e7);
-      emit log("debtToRepayUSD", debtToRepayUSD / 10e7 / 10e7);
-      emit log("amountToRepay", amountToRepay);
-      emit log("assetPriceInUSD", assetPriceInUSD / 10e7);
-
-      emit log("aTokenBalance", aToken.balanceOf(address(this)));
       lendingPool.withdraw(address(asset), amountToRepay, address(this));
 
       ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
@@ -159,8 +143,6 @@ contract Vault is AaveV3ERC4626 {
       // The call to `exactInputSingle` executes the swap.
       uint256 amountOut = uniswapRouter.exactInputSingle(params);
 
-      emit log("amountOut", amountOut / 10 ** borrowedAsset.decimals());
-
       borrowedAsset.approve(address(lendingPool), amountOut);
 
       lendingPool.repay(address(borrowedAsset), amountOut, 2, address(this));
@@ -169,23 +151,76 @@ contract Vault is AaveV3ERC4626 {
     }
   }
 
-  function repay() internal {}
-
   function withdraw(uint256 assets, address receiver, address owner_) public override returns (uint256 shares) {
-    repay();
+    shares = previewWithdraw(assets);
 
-    shares = super.withdraw(assets, receiver, owner_);
-
-    // Rebalance after withdrawal
-    rebalance();
+    lendingPool.flashLoanSimple(
+      address(this), address(borrowedAsset), bToken.balanceOf(address(this)), abi.encode(assets, receiver, owner_, 1), 0
+    );
   }
 
   function redeem(uint256 shares, address receiver, address owner_) public override returns (uint256 assets) {
-    repay();
+    assets = previewRedeem(shares);
 
-    assets = super.redeem(shares, receiver, owner_);
+    lendingPool.flashLoanSimple(
+      address(this), address(borrowedAsset), bToken.balanceOf(address(this)), abi.encode(shares, receiver, owner_, 2), 0
+    );
+  }
 
-    // Rebalance after redemption
+  function executeOperation(
+    address,
+    uint256 amount,
+    uint256 premium,
+    address,
+    bytes calldata params
+  ) external returns (bool) {
+    (uint256 assetsOrShares, address receiver, address owner_, uint32 operationType) =
+      abi.decode(params, (uint256, address, address, uint32));
+
+    borrowedAsset.approve(address(lendingPool), amount);
+
+    lendingPool.repay(address(borrowedAsset), amount, 2, address(this));
+
+    lendingPool.withdraw(address(asset), type(uint256).max, address(this));
+
+    uint256 amountPlusPremium = amount + premium;
+
+    ISwapRouter.ExactOutputSingleParams memory swapParams = ISwapRouter.ExactOutputSingleParams({
+      tokenIn: address(asset),
+      tokenOut: address(borrowedAsset),
+      fee: poolFee,
+      recipient: address(this),
+      deadline: block.timestamp,
+      amountOut: amountPlusPremium,
+      amountInMaximum: type(uint256).max,
+      sqrtPriceLimitX96: 0
+    });
+
+    // Executes the swap returning the amountIn needed to spend to receive the desired amountOut.
+    uniswapRouter.exactOutputSingle(swapParams);
+
+    borrowedAsset.approve(address(lendingPool), amountPlusPremium);
+
+    asset.approve(address(lendingPool), type(uint256).max);
+
+    lendingPool.supply(address(asset), asset.balanceOf(address(this)), address(this), 0);
+
+    if (operationType == 1) {
+      super.withdraw(assetsOrShares, receiver, owner_);
+    } else if (operationType == 2) {
+      super.redeem(assetsOrShares, receiver, owner_);
+    }
+
     rebalance();
+
+    return true;
+  }
+
+  function ADDRESSES_PROVIDER() external view returns (IPoolAddressesProvider) {
+    return IPoolAddressesProvider(lendingPool.ADDRESSES_PROVIDER());
+  }
+
+  function POOL() external view returns (IPool) {
+    return lendingPool;
   }
 }
