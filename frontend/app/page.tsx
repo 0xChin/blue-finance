@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useChainId, useWriteContract } from "wagmi";
+import {
+  useChainId,
+  useWaitForTransactionReceipt,
+  useWatchContractEvent,
+  useWriteContract,
+} from "wagmi";
 import {
   BORROW_ASSETS,
   FACTORY_ABI,
@@ -34,16 +39,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Token from "@/components/token";
+import { parse } from "path";
 
 export default function Home() {
   const { writeContractAsync } = useWriteContract();
   const chainId = useChainId();
   const [isCreatingVault, setIsCreatingVault] = useState(false);
   const [vaults, setVaults] = useState<{ [key: number]: `0x${string}`[] }>({});
+  const [parsedVaults, setParsedVaults] = useState<`0x${string}`[]>([]);
   const [asset, setAsset] = useState<`0x${string}`>("0x");
   const [borrowToken, setBorrowToken] = useState<`0x${string}`>("0x");
   const [minHealthFactor, setMinHealthFactor] = useState(125);
   const [maxHealthFactor, setMaxHealthFactor] = useState(130);
+  const [eventsEmitted, setEventsEmitted] = useState(0);
+  useWatchContractEvent({
+    address: FACTORY_CONTRACT_ADDRESS[chainId],
+    abi: FACTORY_ABI,
+    batch: false,
+    eventName: "VaultCreated",
+    onLogs(logs) {
+      const currentVaults = JSON.parse(localStorage.getItem("vaults") || "{}");
+      currentVaults[chainId] = currentVaults[chainId] || [];
+      currentVaults[chainId].push(logs[0].args.vault);
+      localStorage.setItem("vaults", JSON.stringify(currentVaults));
+      setEventsEmitted(eventsEmitted + 1);
+      alert("Vault created!");
+    },
+  });
 
   const createVault = async () => {
     try {
@@ -56,7 +78,7 @@ export default function Home() {
           borrowToken!,
           parseUnits(minHealthFactor.toString(), 16),
           parseUnits(maxHealthFactor.toString(), 16),
-          ADDRESS_TO_ORACLE_ID[chainId][asset!],
+          BigInt(0),
         ],
       });
     } catch (error) {
@@ -70,7 +92,22 @@ export default function Home() {
       .then((data) => {
         setVaults(data.vaults);
       });
-  }, [chainId]);
+  }, []);
+
+  useEffect(() => {
+    const lsVaults = JSON.parse(localStorage.getItem("vaults") || "{}");
+    const apiVaults = vaults[chainId] || [];
+    let parsedVaults = [];
+    
+    if (lsVaults && lsVaults[chainId]) {
+      parsedVaults = [...lsVaults[chainId], ...apiVaults];
+    } else {
+      parsedVaults = apiVaults;
+    }
+
+    setParsedVaults(parsedVaults);
+  }, [chainId, eventsEmitted])
+  
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24">
@@ -110,7 +147,7 @@ export default function Home() {
           </ToggleGroupItem>
         </ToggleGroup>
         {!isCreatingVault &&
-          (vaults && vaults[chainId] && vaults[chainId].length > 0 ? (
+          (parsedVaults && parsedVaults.length > 0 ? (
             <Table className="mt-4">
               <TableHeader>
                 <TableRow>
@@ -125,7 +162,7 @@ export default function Home() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vaults[chainId].map((vault, index) => (
+                {parsedVaults.map((vault, index) => (
                   <Vault address={vault} key={index} />
                 ))}
               </TableBody>

@@ -64,8 +64,6 @@ export const useVault = (address: `0x${string}`) => {
     ],
   });
 
-  console.log(aaveData.data);
-
   return {
     token: {
       ...{ address: assetAddress.data },

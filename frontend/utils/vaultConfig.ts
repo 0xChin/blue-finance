@@ -1,7 +1,7 @@
 export const FACTORY_CONTRACT_ADDRESS: { [chainId: number]: `0x${string}` } = {
   10: "0x6032Aa03C26dc0eec909af1613D81e829aB2A36A",
   42161: "0x4d13b7cb87d44796aa409615706caf07b8c01aaa",
-  64122: "0x09C786C3fDA647B53d791633dFc565e5259ADB6F",
+  64122: "0xe4d26ff09976d0a5bbb6143c1483c30b939fa09e",
 };
 
 export const LENDING_PROTOCOLS = [

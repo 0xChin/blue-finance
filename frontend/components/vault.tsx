@@ -7,10 +7,6 @@ import { formatUnits, maxUint256 } from "viem";
 export default function Vault({ address }: { address: `0x${string}` }) {
   const vaultData = useVault(address);
 
-  useEffect(() => {
-    console.log(vaultData);
-  }, [vaultData]);
-
   const getIcon = (symbol: string) => {
     return `https://app.aave.com/icons/tokens/${symbol.toLowerCase()}.svg`;
   };
