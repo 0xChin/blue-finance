@@ -20,6 +20,12 @@ import {ERC4626Factory} from "yield-daddy/base/ERC4626Factory.sol";
 /// @notice Factory for creating AaveV3ERC4626 contracts
 contract Factory {
   /// -----------------------------------------------------------------------
+  /// Events
+  /// -----------------------------------------------------------------------
+
+  event VaultCreated(address vault);
+
+  /// -----------------------------------------------------------------------
   /// Errors
   /// -----------------------------------------------------------------------
 
@@ -45,6 +51,9 @@ contract Factory {
   /// @notice The Pyth contract
   IPyth public immutable pyth;
 
+  /// @notice The Pyth Price Feed mapping to id
+  mapping(uint256 => bytes32) public pythPriceFeedIds;
+
   /// @notice The Superform Factory contract
   ISuperformFactory public immutable superformFactory;
 
@@ -61,6 +70,11 @@ contract Factory {
     uniswapRouter = uniswapRouter_;
     pyth = pyth_;
     superformFactory = superformFactory_;
+    pythPriceFeedIds[0] = bytes32(0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace); // ETH/USD
+    pythPriceFeedIds[1] = bytes32(0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43); // BTC/USD
+    pythPriceFeedIds[2] = bytes32(0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf); // OP/USD
+    pythPriceFeedIds[3] = bytes32(0x3fa4252848f9f0a1480be62745a4629d9eb1322aebab8a791e344b3b9c1adcf5); // ARB/USD
+    pythPriceFeedIds[4] = bytes32(0x8ac0c70fff57e9aefdf5edf44b51d62c2d433653cbb2cf5cc06bb115af04d221); // LINK/USD
   }
 
   function createERC4626(
@@ -68,13 +82,15 @@ contract Factory {
     ERC20 borrowedAsset,
     uint256 minHealthFactor_,
     uint256 maxHealthFactor_,
-    bytes32 pythPriceFeed_
+    uint256 pythPriceFeedId_
   ) external returns (ERC4626 vault) {
     DataTypes.ReserveData memory reserveData = lendingPool.getReserveData(address(asset));
     address aTokenAddress = reserveData.aTokenAddress;
     if (aTokenAddress == address(0)) {
       revert AaveV3ERC4626Factory__ATokenNonexistent();
     }
+
+    bytes32 pythPriceFeed_ = pythPriceFeedIds[pythPriceFeedId_];
 
     vault = new Vault{salt: bytes32(0)}(
       asset,
@@ -91,5 +107,7 @@ contract Factory {
     );
 
     superformFactory.createSuperform(1, address(vault));
+
+    emit VaultCreated(address(vault));
   }
 }

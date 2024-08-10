@@ -14,11 +14,7 @@ contract IntegrationVault is IntegrationBase {
     _vault = Vault(
       address(
         _factory.createERC4626(
-          _weth,
-          _dai,
-          _healthFactorWithDecimals(125),
-          _healthFactorWithDecimals(130),
-          bytes32(0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace)
+          _weth, _dai, _healthFactorWithDecimals(125), _healthFactorWithDecimals(130), ethUsdPythId
         )
       )
     );

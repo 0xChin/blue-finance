@@ -17,6 +17,12 @@ import {IRewardsController} from "yield-daddy/aave-v3/external/IRewardsControlle
 contract IntegrationBase is Test {
   uint256 internal constant _FORK_BLOCK = 123_851_299;
 
+  uint256 ethUsdPythId = 0;
+  uint256 btcUsdPythId = 1;
+  uint256 opUsdPythId = 2;
+  uint256 arbUsdPythId = 3;
+  uint256 linkUsdPythId = 4;
+
   address internal _user = makeAddr("user");
   address internal _merchant = makeAddr("merchant");
   address internal _owner = makeAddr("owner");

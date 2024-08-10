@@ -101,4 +101,4 @@ export const FACTORY_ABI = [
     stateMutability: "view",
     type: "function",
   },
-];
+] as const;

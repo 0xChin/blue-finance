@@ -31,10 +31,18 @@ export async function GET(request: NextRequest) {
     ),
   });
 
+  const contract = getContract({
+    address: FACTORY_CONTRACT_ADDRESS,
+    abi: FACTORY_ABI,
+    // 1a. Insert a single client
+    client: { wallet: walletClient },
+    // 1b. Or public and/or wallet clients
+  });
+
   console.log(process.env.PRIVATE_KEY);
   const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
 
-  const { result, request: contractRequest } =
+  /*  const { result, request: contractRequest } =
     await publicClient.simulateContract({
       account,
       address: FACTORY_CONTRACT_ADDRESS,
@@ -50,8 +58,8 @@ export async function GET(request: NextRequest) {
         ),
       ],
     });
-
+ */
   /* const tx = await walletClient.writeContract(contractRequest); */
 
-  return Response.json({ contractAddress: result });
+  return Response.json({ contractAddress: FACTORY_CONTRACT_ADDRESS });
 }

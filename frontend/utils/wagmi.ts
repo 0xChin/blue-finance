@@ -1,9 +1,7 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { Chain, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { arbitrum, optimism } from "wagmi/chains";
 
-import { defineChain } from "viem";
-
-export const virtualOptimism = defineChain({
+export const virtualOptimism = {
   id: 64122,
   name: "Virtual Optimism",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
@@ -16,11 +14,12 @@ export const virtualOptimism = defineChain({
   },
   blockExplorers: {
     default: {
-      name: "Etherscan",
+      name: "Tenderly Explorer",
       url: "https://dashboard.tenderly.co/0xchin/project/testnet/0010d143-1530-4dcb-b00d-1f300fefc9b1",
     },
   },
-});
+  testnet: true,
+} as const satisfies Chain;
 
 export const config = getDefaultConfig({
   appName: "RainbowKit demo",

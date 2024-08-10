@@ -223,4 +223,17 @@ contract Vault is AaveV3ERC4626, IFlashLoanSimpleReceiver {
   function POOL() external view returns (IPool) {
     return lendingPool;
   }
+
+  function getVaultAaveData() external view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
+    (
+      uint256 totalCollateralUSD,
+      uint256 totalDebtUSD,
+      uint256 availa,
+      uint256 liquidationThreshold,
+      uint256 ltv,
+      uint256 currentHealthFactor
+    ) = lendingPool.getUserAccountData(address(this));
+
+    return (totalCollateralUSD, totalDebtUSD, availa, liquidationThreshold, ltv, currentHealthFactor);
+  }
 }
