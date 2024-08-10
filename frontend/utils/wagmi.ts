@@ -1,5 +1,5 @@
 import { Chain, getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { arbitrum, optimism } from "wagmi/chains";
+import { arbitrum, base, optimism } from "wagmi/chains";
 
 export const virtualOptimism = {
   id: 64122,
@@ -24,6 +24,6 @@ export const virtualOptimism = {
 export const config = getDefaultConfig({
   appName: "RainbowKit demo",
   projectId: "1175b1e6b9cdc2ace126da3276d6788c",
-  chains: [optimism, arbitrum, virtualOptimism],
+  chains: [optimism, arbitrum, base, virtualOptimism],
   ssr: true,
 });

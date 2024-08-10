@@ -30,14 +30,14 @@ export async function GET(request: NextRequest) {
       "https://opt-mainnet.g.alchemy.com/v2/YNob1yS6fZux6Fs44VAybG3JXP4k8QgN"
     ),
   });
-
+  /* 
   const contract = getContract({
     address: FACTORY_CONTRACT_ADDRESS,
     abi: FACTORY_ABI,
     // 1a. Insert a single client
     client: { wallet: walletClient },
     // 1b. Or public and/or wallet clients
-  });
+  }); */
 
   console.log(process.env.PRIVATE_KEY);
   const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);

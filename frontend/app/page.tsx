@@ -2,34 +2,75 @@
 
 import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useWriteContract } from "wagmi";
-import { FACTORY_ABI, FACTORY_CONTRACT_ADDRESS } from "@/utils/vaultConfig";
-import { parseUnits, stringToBytes, toBytes } from "viem";
-import { simulateContract } from "wagmi/actions";
-import { config } from "@/utils/wagmi";
+import { useChainId, useWriteContract } from "wagmi";
+import { BORROW_ASSETS, FACTORY_ABI, FACTORY_CONTRACT_ADDRESS } from "@/utils/vaultConfig";
+import { parseUnits } from "viem";
+import { pythPriceFeedIds } from "@/utils/vaultConfig";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useEffect, useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import Vault from "@/components/vault";
+import { LENDING_PROTOCOLS, ASSETS, ADDRESS_TO_ORACLE_ID } from "@/utils/vaultConfig";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Token from "@/components/token";
 
 export default function Home() {
   const { writeContractAsync } = useWriteContract();
+  const chainId = useChainId();
+  const [isCreatingVault, setIsCreatingVault] = useState(false);
+  const [vaults, setVaults] = useState<`0x${string}`[]>([]);
+  const [asset, setAsset] = useState<`0x${string}`>("0x");
+  const [borrowToken, setBorrowToken] = useState<`0x${string}`>("0x");
+  const [minHealthFactor, setMinHealthFactor] = useState(125);
+  const [maxHealthFactor, setMaxHealthFactor] = useState(130);
 
   const createVault = async () => {
-    const result = await simulateContract(config, {
-      address: FACTORY_CONTRACT_ADDRESS,
-      abi: FACTORY_ABI,
-      functionName: "createERC4626",
-      args: [
-        "0x4200000000000000000000000000000000000006",
-        "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
-        parseUnits("125", 16),
-        parseUnits("130", 16),
-        "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace" as `0x${string}`,
-      ],
-    });
+    try {
+      const result = await writeContractAsync({
+        address: FACTORY_CONTRACT_ADDRESS[chainId],
+        abi: FACTORY_ABI,
+        functionName: "createERC4626",
+        args: [
+          asset!,
+          borrowToken!,
+          parseUnits(minHealthFactor.toString(), 16),
+          parseUnits(maxHealthFactor.toString(), 16),
+          ADDRESS_TO_ORACLE_ID[chainId][asset!],
+        ],
+      });
 
-    console.log(result);
+      console.log(result);
+    } catch (error) {
+      console.error("Error creating vault:", error);
+    }
   };
 
+  useEffect(() => {
+    console.log("Fetching vaults with chainId", chainId);
+
+    fetch(`/api/getVaults?chainId=${chainId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        setVaults(data.vaults);
+      });
+  }, [chainId]);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <main className="flex min-h-screen flex-col items-center p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
         <Image
           className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
@@ -39,11 +80,158 @@ export default function Home() {
           height={37}
           priority
         />
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
+        <div className="fixed flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
           <ConnectButton />
         </div>
       </div>
-      <button onClick={createVault}>Transfer</button>
+      <div className="mt-20">
+        <ToggleGroup
+          type="single"
+          className="flex"
+          value={isCreatingVault ? "createVault" : "deployedVaults"}
+          onValueChange={(value) => setIsCreatingVault(value === "createVault")}
+        >
+          <ToggleGroupItem
+            className="px-40"
+            value="deployedVaults"
+            aria-label="Deployed Vaults"
+          >
+            <p>Deployed Vaults</p>
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            className="px-40"
+            value="createVault"
+            aria-label="Create Vault"
+          >
+            <p>Create Vault</p>
+          </ToggleGroupItem>
+        </ToggleGroup>
+        {!isCreatingVault &&
+          (vaults.length > 0 ? (
+            <Table className="mt-4">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center">Token</TableHead>
+                  <TableHead className="text-center">Debt token</TableHead>
+                  <TableHead className="text-center">TVL</TableHead>
+                  <TableHead className="text-center">
+                    Target Health Factor
+                  </TableHead>
+                  <TableHead className="text-center">Health Factor</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vaults.map((vault, index) => (
+                  <Vault address={vault} key={index} />
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="mt-10 text-center">
+              No deployed vaults found. Create one to get started.
+            </p>
+          ))}
+        {isCreatingVault && (
+          <form className="mt-4 p-4 bg-gray-100 rounded">
+            <label className="block mb-2">
+              Protocol:
+              <Select>
+                <SelectTrigger className="w-full mt-1 p-2 border rounded">
+                  <SelectValue placeholder="Select Protocol" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LENDING_PROTOCOLS.map((protocol) => (
+                    <SelectItem value={protocol.name}>
+                      <div className="flex items-center">
+                        <Image
+                          src={protocol.image}
+                          alt={protocol.name}
+                          width={24}
+                          height={24}
+                          className="mr-2"
+                        />
+                        {protocol.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="block mb-2">
+              Asset:
+              <Select
+                onValueChange={(value) => setAsset(value as `0x${string}`)}
+              >
+                <SelectTrigger className="w-full mt-1 p-2 border rounded">
+                  <SelectValue placeholder="Select Asset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASSETS[chainId].map((token: `0x${string}`, index) => (
+                    <SelectItem value={token} key={index}>
+                      <Token address={token} />
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="block mb-2">
+              Borrow Token:
+              <Select
+                onValueChange={(value) =>
+                  setBorrowToken(value as `0x${string}`)
+                }
+                >
+                <SelectTrigger className="w-full mt-1 p-2 border rounded">
+                  <SelectValue placeholder="Select Borrow Token" />
+                </SelectTrigger>
+                <SelectContent>
+                {BORROW_ASSETS[chainId].map((token: `0x${string}`, index) => (
+                  <SelectItem value={token} key={index}>
+                    <Token address={token} />
+                  </SelectItem>
+                ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="block mb-2">
+              Min Health Factor:
+              <input
+                type="range"
+                className="block w-full mt-1"
+                min="100"
+                max="200"
+                value={minHealthFactor}
+                onChange={(e) => setMinHealthFactor(Number(e.target.value))}
+              />
+              <span className="block mt-1 text-sm text-gray-600">
+                {minHealthFactor / 100}
+              </span>
+            </label>
+            <label className="block mb-2">
+              Max Health Factor:
+              <input
+                type="range"
+                className="block w-full mt-1"
+                min="100"
+                max="200"
+                value={maxHealthFactor}
+                onChange={(e) => setMaxHealthFactor(Number(e.target.value))}
+              />
+              <span className="block mt-1 text-sm text-gray-600">
+                {maxHealthFactor / 100}
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={createVault}
+              className="mt-4 p-2 bg-blue-500 text-white rounded"
+            >
+              Create Vault
+            </button>
+          </form>
+        )}
+      </div>
     </main>
   );
 }

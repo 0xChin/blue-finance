@@ -34,4 +34,4 @@ arbitrum = "${ARBITRUM_RPC}"
 [etherscan]
 optimism = { key = "${OPTIMISM_ETHERSCAN_API_KEY}" }
 arbitrum = { key = "${ARBITRUM_ETHERSCAN_API_KEY}" }
-unknown_chain = { key = "${TENDERLY_ACCESS_KEY}", chain = 73571, url = "${VIRTUAL_OPTIMISM_RPC}/verify/etherscan" }
+unknown_chain = { key = "${TENDERLY_ACCESS_KEY}", chain = 64122, url = "${VIRTUAL_OPTIMISM_RPC}/verify/etherscan" }
