@@ -15,16 +15,16 @@ import {ISwapRouter} from "uniswap/v3-periphery/interfaces/ISwapRouter.sol";
 import {IRewardsController} from "yield-daddy/aave-v3/external/IRewardsController.sol";
 
 contract IntegrationBase is Test {
-  uint256 internal constant _FORK_BLOCK = 241_332_698;
+  uint256 internal constant _FORK_BLOCK = 123_851_299;
 
   address internal _user = makeAddr("user");
   address internal _merchant = makeAddr("merchant");
   address internal _owner = makeAddr("owner");
-  address internal _wethWhale = 0xE5Cf22EE4988d54141B77050967E1052Bd9c7F7A;
+  address internal _wethWhale = 0xDFF90E4A6c229565f25337B1DB9fA12f6d8cB118;
   address[] internal _tokens;
   IPool internal _pool = IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
   IRewardsController internal _rewardsController = IRewardsController(0x929EC64c34a17401F460460D4B9390518E5B473e);
-  ERC20 internal _weth = ERC20(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
+  ERC20 internal _weth = ERC20(0x4200000000000000000000000000000000000006);
   ERC20 internal _dai = ERC20(0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1);
   ISwapRouter internal _swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
   IPyth internal _pyth = IPyth(0xff1a0f4744e8582DF1aE09D5611b887B6a12925C);
@@ -36,7 +36,7 @@ contract IntegrationBase is Test {
   function setUp() public {
     vm.startPrank(_owner);
     _factory = new Factory(_pool, _rewardsController, _swapRouter, _pyth, _superformFactory);
-    vm.createSelectFork(vm.rpcUrl("arbitrum"), _FORK_BLOCK);
+    vm.createSelectFork(vm.rpcUrl("optimism"), _FORK_BLOCK);
     vm.label(address(_vault), "Vault");
     vm.label(address(_factory), "Factory");
     vm.label(address(_pool), "Pool");

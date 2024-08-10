@@ -14,9 +14,8 @@
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "coverage": "forge coverage --report summary --report lcov --match-path 'test/unit/*'",
     "deploy:arbitrum": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $ARBITRUM_RPC --broadcast --chain arbitrum --private-key $ARBITRUM_DEPLOYER_PK --verify'",
-    "deploy:mainnet": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $MAINNET_RPC --broadcast --chain mainnet --private-key $MAINNET_DEPLOYER_PK'",
     "deploy:optimism": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $OPTIMISM_RPC --broadcast --chain optimism --private-key $OPTIMISM_DEPLOYER_PK --verify'",
-    "deploy:sepolia": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $SEPOLIA_RPC --broadcast --chain sepolia --private-key $SEPOLIA_DEPLOYER_PK'",
+    "deploy:v-optimism": "bash -c 'source .env && forge script Deploy -vvvvv --rpc-url $VIRTUAL_OPTIMISM_RPC --broadcast --private-key $OPTIMISM_DEPLOYER_PK'",
     "lint:check": "yarn lint:sol-tests && yarn lint:sol-logic && forge fmt --check",
     "lint:fix": "sort-package-json && forge fmt && yarn lint:sol-tests --fix && yarn lint:sol-logic --fix",
     "lint:natspec": "npx @defi-wonderland/natspec-smells --config natspec-smells.config.js",
@@ -41,8 +40,12 @@
     "@aave/periphery-v3": "aave/aave-v3-periphery",
     "@openzeppelin/contracts": "^5.0.2",
     "@pythnetwork/pyth-sdk-solidity": "^4.0.0",
+    "@rainbow-me/rainbowkit": "^2.1.4",
+    "@tanstack/react-query": "^5.51.23",
     "@uniswap/v3-periphery": "^1.4.4",
     "solmate": "^6.2.0",
+    "viem": "2.x",
+    "wagmi": "^2.12.5",
     "yield-daddy": "github:0xchin/yield-daddy#5e4eb7a225780484f4a22e8c119275850784acb5"
   },
   "devDependencies": {

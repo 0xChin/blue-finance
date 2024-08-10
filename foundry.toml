@@ -28,15 +28,10 @@ src = 'src/interfaces/'
 runs = 1000
 
 [rpc_endpoints]
-mainnet = "${MAINNET_RPC}"
 optimism = "${OPTIMISM_RPC}"
 arbitrum = "${ARBITRUM_RPC}"
-base = "${BASE_RPC}"
-sepolia = "${SEPOLIA_RPC}"
 
 [etherscan]
-mainnet = { key = "${ETHERSCAN_API_KEY}", chain = "mainnet" }
 optimism = { key = "${OPTIMISM_ETHERSCAN_API_KEY}" }
 arbitrum = { key = "${ARBITRUM_ETHERSCAN_API_KEY}" }
-base = { key = "${BASE_ETHERSCAN_API_KEY}" }
-sepolia = { key = "${ETHERSCAN_API_KEY}", chain = "sepolia" }
+unknown_chain = { key = "${TENDERLY_ACCESS_KEY}", chain = 73571, url = "${TENDERLY_VIRTUAL_TESTNET_RPC_URL}/verify/etherscan" }

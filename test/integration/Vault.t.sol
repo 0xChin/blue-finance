@@ -18,7 +18,7 @@ contract IntegrationVault is IntegrationBase {
           _dai,
           _healthFactorWithDecimals(125),
           _healthFactorWithDecimals(130),
-          bytes32(0x8ac0c70fff57e9aefdf5edf44b51d62c2d433653cbb2cf5cc06bb115af04d221)
+          bytes32(0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace)
         )
       )
     );
@@ -33,7 +33,7 @@ contract IntegrationVault is IntegrationBase {
 
     _vault.approve(address(_pool), type(uint256).max);
 
-    _vault.redeem(_vault.maxRedeem(_wethWhale) - _vault.maxRedeem(_wethWhale) / 10, _wethWhale, _wethWhale);
+    _vault.redeem(_vault.maxRedeem(_wethWhale) - _vault.maxRedeem(_wethWhale) / 100, _wethWhale, _wethWhale);
     vm.stopPrank();
   }
 }
