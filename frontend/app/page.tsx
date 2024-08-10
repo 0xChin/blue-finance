@@ -3,7 +3,11 @@
 import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useChainId, useWriteContract } from "wagmi";
-import { BORROW_ASSETS, FACTORY_ABI, FACTORY_CONTRACT_ADDRESS } from "@/utils/vaultConfig";
+import {
+  BORROW_ASSETS,
+  FACTORY_ABI,
+  FACTORY_CONTRACT_ADDRESS,
+} from "@/utils/vaultConfig";
 import { parseUnits } from "viem";
 import { pythPriceFeedIds } from "@/utils/vaultConfig";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -16,7 +20,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Vault from "@/components/vault";
-import { LENDING_PROTOCOLS, ASSETS, ADDRESS_TO_ORACLE_ID } from "@/utils/vaultConfig";
+import {
+  LENDING_PROTOCOLS,
+  ASSETS,
+  ADDRESS_TO_ORACLE_ID,
+} from "@/utils/vaultConfig";
 
 import {
   Select,
@@ -31,7 +39,7 @@ export default function Home() {
   const { writeContractAsync } = useWriteContract();
   const chainId = useChainId();
   const [isCreatingVault, setIsCreatingVault] = useState(false);
-  const [vaults, setVaults] = useState<`0x${string}`[]>([]);
+  const [vaults, setVaults] = useState<{ [key: number]: `0x${string}`[] }>({});
   const [asset, setAsset] = useState<`0x${string}`>("0x");
   const [borrowToken, setBorrowToken] = useState<`0x${string}`>("0x");
   const [minHealthFactor, setMinHealthFactor] = useState(125);
@@ -51,20 +59,15 @@ export default function Home() {
           ADDRESS_TO_ORACLE_ID[chainId][asset!],
         ],
       });
-
-      console.log(result);
     } catch (error) {
       console.error("Error creating vault:", error);
     }
   };
 
   useEffect(() => {
-    console.log("Fetching vaults with chainId", chainId);
-
     fetch(`/api/getVaults?chainId=${chainId}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
         setVaults(data.vaults);
       });
   }, [chainId]);
@@ -107,7 +110,7 @@ export default function Home() {
           </ToggleGroupItem>
         </ToggleGroup>
         {!isCreatingVault &&
-          (vaults.length > 0 ? (
+          (vaults && vaults[chainId] && vaults[chainId].length > 0 ? (
             <Table className="mt-4">
               <TableHeader>
                 <TableRow>
@@ -122,7 +125,7 @@ export default function Home() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vaults.map((vault, index) => (
+                {vaults[chainId].map((vault, index) => (
                   <Vault address={vault} key={index} />
                 ))}
               </TableBody>
@@ -141,8 +144,8 @@ export default function Home() {
                   <SelectValue placeholder="Select Protocol" />
                 </SelectTrigger>
                 <SelectContent>
-                  {LENDING_PROTOCOLS.map((protocol) => (
-                    <SelectItem value={protocol.name}>
+                  {LENDING_PROTOCOLS.map((protocol, index) => (
+                    <SelectItem value={protocol.name} key={index}>
                       <div className="flex items-center">
                         <Image
                           src={protocol.image}
@@ -181,16 +184,16 @@ export default function Home() {
                 onValueChange={(value) =>
                   setBorrowToken(value as `0x${string}`)
                 }
-                >
+              >
                 <SelectTrigger className="w-full mt-1 p-2 border rounded">
                   <SelectValue placeholder="Select Borrow Token" />
                 </SelectTrigger>
                 <SelectContent>
-                {BORROW_ASSETS[chainId].map((token: `0x${string}`, index) => (
-                  <SelectItem value={token} key={index}>
-                    <Token address={token} />
-                  </SelectItem>
-                ))}
+                  {BORROW_ASSETS[chainId].map((token: `0x${string}`, index) => (
+                    <SelectItem value={token} key={index}>
+                      <Token address={token} />
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </label>

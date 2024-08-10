@@ -15,8 +15,6 @@ import { privateKeyToAccount } from "viem/accounts";
 import { optimism } from "viem/chains";
 
 export async function GET(request: NextRequest) {
-  console.log(request.nextUrl.searchParams);
-
   const publicClient = createPublicClient({
     chain: optimism,
     transport: http(
@@ -39,7 +37,6 @@ export async function GET(request: NextRequest) {
     // 1b. Or public and/or wallet clients
   }); */
 
-  console.log(process.env.PRIVATE_KEY);
   const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
 
   /*  const { result, request: contractRequest } =

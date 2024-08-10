@@ -1,6 +1,6 @@
 import { useReadContract, useReadContracts } from "wagmi";
 import { VAULT_ABI } from "@/utils/vaultConfig";
-import { erc20Abi } from "viem";
+import { erc20Abi, maxUint256 } from "viem";
 
 export const useVault = (address: `0x${string}`) => {
   const assetAddress = useReadContract({
@@ -31,6 +31,12 @@ export const useVault = (address: `0x${string}`) => {
     functionName: "borrowedAsset",
   });
 
+  const targetHealthFactor = useReadContract({
+    abi: VAULT_ABI,
+    address,
+    functionName: "TARGET_HEALTH_FACTOR",
+  });
+
   const borrowedAssetData = useReadContracts({
     allowFailure: false,
     contracts: [
@@ -58,9 +64,7 @@ export const useVault = (address: `0x${string}`) => {
     ],
   });
 
-  if (aaveData.data) {
-    console.log(aaveData.data[0][0] - aaveData.data[0][1]);
-  }
+  console.log(aaveData.data);
 
   return {
     token: {
@@ -73,9 +77,8 @@ export const useVault = (address: `0x${string}`) => {
       decimals: borrowedAssetData.data ? borrowedAssetData.data[0] : 0,
       symbol: borrowedAssetData.data ? borrowedAssetData.data[1] : "",
     },
-    tvl: aaveData.data
-      ? aaveData.data[0][0] - aaveData.data[0][1]
-      : parseInt("0").toFixed(2),
-    healthFactor: 0,
+    tvl: aaveData.data ? aaveData.data[0][0] - aaveData.data[0][1] : BigInt(0),
+    targetHealthFactor: targetHealthFactor.data,
+    healthFactor: aaveData.data ? aaveData.data[0][5] : maxUint256,
   };
 };

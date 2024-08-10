@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { TableCell, TableRow } from "./ui/table";
 import { useVault } from "@/app/hooks/useVault";
 import Image from "next/image";
+import { formatUnits, maxUint256 } from "viem";
 
 export default function Vault({ address }: { address: `0x${string}` }) {
   const vaultData = useVault(address);
@@ -38,9 +39,9 @@ export default function Vault({ address }: { address: `0x${string}` }) {
           {vaultData.debtToken.symbol}
         </div>
       </TableCell>
-      <TableCell className="text-center">$10.000</TableCell>
-      <TableCell className="text-center">1.25</TableCell>
-      <TableCell className="text-center">1.25</TableCell>
+      <TableCell className="text-center">{vaultData.tvl > BigInt(0) ? `$${formatUnits(vaultData.tvl as bigint, 18)}` : "-"}</TableCell>
+      <TableCell className="text-center">{vaultData.targetHealthFactor ? formatUnits(vaultData.targetHealthFactor, 18) : "-"}</TableCell>
+      <TableCell className="text-center">{vaultData.healthFactor && vaultData.healthFactor !== maxUint256 ? formatUnits(vaultData.healthFactor, 18) : "-"}</TableCell>
       <TableCell className="text-center">
         <button className="py-2 px-4 bg-blue-500 text-white rounded">
           Deposit
