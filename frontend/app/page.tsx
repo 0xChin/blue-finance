@@ -4,7 +4,6 @@ import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import {
   useChainId,
-  useWaitForTransactionReceipt,
   useWatchContractEvent,
   useWriteContract,
 } from "wagmi";
@@ -14,7 +13,6 @@ import {
   FACTORY_CONTRACT_ADDRESS,
 } from "@/utils/vaultConfig";
 import { parseUnits } from "viem";
-import { pythPriceFeedIds } from "@/utils/vaultConfig";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useEffect, useState } from "react";
 import {
@@ -39,12 +37,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Token from "@/components/token";
-import { parse } from "path";
 
 export default function Home() {
   const { writeContractAsync } = useWriteContract();
   const chainId = useChainId();
-  const [isCreatingVault, setIsCreatingVault] = useState(false);
+  const [group, setGroup] = useState("deployedVaults");
   const [vaults, setVaults] = useState<{ [key: number]: `0x${string}`[] }>({});
   const [parsedVaults, setParsedVaults] = useState<`0x${string}`[]>([]);
   const [asset, setAsset] = useState<`0x${string}`>("0x");
@@ -78,7 +75,7 @@ export default function Home() {
           borrowToken!,
           parseUnits(minHealthFactor.toString(), 16),
           parseUnits(maxHealthFactor.toString(), 16),
-          BigInt(0),
+          ADDRESS_TO_ORACLE_ID[chainId][asset!],
         ],
       });
     } catch (error) {
@@ -128,25 +125,32 @@ export default function Home() {
         <ToggleGroup
           type="single"
           className="flex"
-          value={isCreatingVault ? "createVault" : "deployedVaults"}
-          onValueChange={(value) => setIsCreatingVault(value === "createVault")}
+          value={group}
+          onValueChange={(value) => setGroup(value)}
         >
           <ToggleGroupItem
-            className="px-40"
+            className="px-32"
             value="deployedVaults"
             aria-label="Deployed Vaults"
           >
             <p>Deployed Vaults</p>
           </ToggleGroupItem>
           <ToggleGroupItem
-            className="px-40"
+            className="px-32"
             value="createVault"
             aria-label="Create Vault"
           >
             <p>Create Vault</p>
           </ToggleGroupItem>
+          <ToggleGroupItem
+            className="px-32"
+            value="simulate"
+            aria-label="Simulate"
+          >
+            <p>Simulate</p>
+          </ToggleGroupItem>
         </ToggleGroup>
-        {!isCreatingVault &&
+        {group === "deployedVaults" &&
           (parsedVaults && parsedVaults.length > 0 ? (
             <Table className="mt-4">
               <TableHeader>
@@ -172,7 +176,7 @@ export default function Home() {
               No deployed vaults found. Create one to get started.
             </p>
           ))}
-        {isCreatingVault && (
+        {group === "createVault" && (
           <form className="mt-4 p-4 bg-gray-100 rounded">
             <label className="block mb-2">
               Protocol:
