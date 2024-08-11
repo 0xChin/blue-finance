@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Token from "@/components/token";
+import VaultSimulate from "@/components/vaultSimulate";
 
 export default function Home() {
   const { writeContractAsync } = useWriteContract();
@@ -147,7 +148,7 @@ export default function Home() {
             value="simulate"
             aria-label="Simulate"
           >
-            <p>Simulate</p>
+            <p>My Positions</p>
           </ToggleGroupItem>
         </ToggleGroup>
         {group === "deployedVaults" &&
@@ -275,6 +276,31 @@ export default function Home() {
             </button>
           </form>
         )}
+        {group === "simulate" &&  (parsedVaults && parsedVaults.length > 0 ? (
+            <Table className="mt-4">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center">Token</TableHead>
+                  <TableHead className="text-center">Debt token</TableHead>
+                  <TableHead className="text-center">Your position</TableHead>
+                  <TableHead className="text-center">
+                    Total Assets USD
+                  </TableHead>
+                  <TableHead className="text-center">Total Debt USD</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {parsedVaults.map((vault, index) => (
+                  <VaultSimulate address={vault} key={index} />
+                ))}
+              </TableBody>
+            </Table>) : (
+              <p className="mt-10 text-center">
+                No deployed vaults found. Create one to get started.
+              </p>
+            ))}
+          
       </div>
     </main>
   );

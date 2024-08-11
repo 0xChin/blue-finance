@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
