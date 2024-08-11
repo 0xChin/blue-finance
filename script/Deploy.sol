@@ -34,6 +34,15 @@ contract Deploy is Script {
       ISuperformFactory(0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC)
     );
 
+    // V-Optimism
+    _deploymentParams[64_122] = DeploymentParams(
+      IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD),
+      IRewardsController(0x929EC64c34a17401F460460D4B9390518E5B473e),
+      ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564),
+      IPyth(0xff1a0f4744e8582DF1aE09D5611b887B6a12925C),
+      ISuperformFactory(0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC)
+    );
+
     // Arbitrum
     _deploymentParams[42_161] = DeploymentParams(
       IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD),
