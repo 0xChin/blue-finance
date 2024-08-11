@@ -59,6 +59,14 @@ contract Deploy is Script {
       IPyth(0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a),
       ISuperformFactory(0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC)
     );
+    // Mode
+    _deploymentParams[34_443] = DeploymentParams(
+      IPool(0xA238Dd80C259a72e81d7e4664a9801593F98d1c5),
+      IRewardsController(0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44),
+      ISwapRouter(0x2626664c2603336E57B271c5C0b26F421741e481),
+      IPyth(0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a),
+      ISuperformFactory(0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC)
+    );
   }
 
   function run() public {
